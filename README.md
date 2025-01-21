@@ -19,6 +19,7 @@ I would like the `civitai` site to understand metadata, the closest to this was 
 If you have *ComfyUI-Manager*, you can click `Install via Git URL` and install these custom nodes `https://github.com/KLL535/ComfyUI_SimpleButcher.git`.
 
 ### Method 2: Manual
+In Windows:
 - run `cmd`, go to the ComfyUI folder
 - `cd custom_nodes`
 - `git clone https://github.com/KLL535/ComfyUI_SimpleButcher.git`
@@ -107,6 +108,11 @@ If not connected these lines will be missing:
 - `metadata_text` - *STRING* - Metadata written to file.
 
 ![d](https://github.com/user-attachments/assets/e767e065-5e99-4718-bc80-e169ecc9f471)
+
+## Info in terminal
+3 node `Simple Load Line From Text File` running:
+
+![image](https://github.com/user-attachments/assets/e9eb3980-6454-4682-90cf-a37452a1200b)
 
 Maybe it will be useful to someone. This is my first project, there may be mistakes.
 
