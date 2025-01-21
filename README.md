@@ -11,6 +11,7 @@ I would also like it if lore could be written in any order and any quantity in a
 I would like the `civitai` site to understand metadata, the closest to this was the `alexopus/ComfyUI-Image-Saver` project, but it loses lora written in Forge style, by internal name.
 
 ![workflow](https://github.com/user-attachments/assets/9014a2a0-c507-4872-b5eb-9a29b3b87518)
+[!] You need to remove the first node with empty text, so that it does not block the execution of the chain, since the text in it does not change.
 
 ## How to install?
 
@@ -20,9 +21,9 @@ If you have *ComfyUI-Manager*, you can click `Install via Git URL` and install t
 ### Method 2: Manual
 - run `cmd`, go to the ComfyUI folder
 - `cd custom_nodes`
-- `git clone git@github.com:KLL535/ComfyUI_SimpleButcher.git`
+- `git clone https://github.com/KLL535/ComfyUI_SimpleButcher.git`
 - `cd ComfyUI_SimpleButcher`
-- `pip install -r requirements.txt`
+- `.\..\..\..\python_embeded\python.exe -s -m pip install -r requirements.txt`
 - Start/restart ComfyUI
 
 ## Node: Simple Load Line From Text File
