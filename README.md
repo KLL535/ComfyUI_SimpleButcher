@@ -58,8 +58,8 @@ If the text contains lore, written in Forge style: `<lora:name:1.0>` or `<lora:n
 ![b](https://github.com/user-attachments/assets/fc1b65a2-acde-4e72-ab3a-05c09ffb2d06)
 
 ## Node: Simple Lora Loader
-Multiple LoRAs loader, understands discriptions in Forge style: <lora:name:1.0> or <lora:name:unet=1.0:te=0.75>. 
-Understands both file names and internal lore names (Forge style). 
+Multiple LoRAs loader, understands discriptions in Forge style: `<lora:name:1.0>` or `<lora:name:unet=1.0:te=0.75>`. 
+Understands both file names and internal lore names, which is read from the metadata of the `*.safetensors` file from the `ss_output_name` field. 
 Once creates a `lora_name.json` dictionary and places it in the lora folder to speed up. 
 Once creates a lora templates to `__txt` folder. 
 Additionally, the hash of all lora is read once.
