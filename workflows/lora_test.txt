@@ -1,0 +1,9 @@
+<lora:BeautyInEvilFlux:1> hkevil, 
+<lora:flux.1_lora_flyway_Epic-detail_v2:1> 
+<lora:RetroAnimeFluxV1:1> 
+<lora:Studio_Ghibli_Flux:1> ghiblistyle, 
+<lora:dreadmirth-style-art:1> dreadmirthart, 
+<lora:RM_Animefy_v1.0M:1> 
+<lora:Illustration_Style_IV:1> 
+<lora:ImpressionismFlux:1> ArsMJStyle, impressionism, 
+<lora:FluxDFaeTasticDetails:1>
