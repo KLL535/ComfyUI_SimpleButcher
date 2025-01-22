@@ -47,8 +47,8 @@ class SimpleLoadLineFromTextFile:
                 "count": ("INT", {"default": 0, "min": 0, "step": 1}),
             },
             "optional": {
-                "prefix": ("STRING", {"multiline": True, "default": "", "tooltip": "Add text to the beginning of the prompt", "forceInput": True}),   
-                "postfix": ("STRING", {"multiline": True, "default": "", "tooltip": "Add text to the ending of the prompt", "forceInput": True}),
+                "prefix": ("STRING", {"multiline": True, "default": "", "tooltip": "Add text to the beginning of the prompt"}),   
+                "postfix": ("STRING", {"multiline": True, "default": "", "tooltip": "Add text to the ending of the prompt"}),
             }
         }
 
