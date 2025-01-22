@@ -11,7 +11,7 @@ I also wish for the ability to write LoRA in any order and quantity within a tex
 ## How to install?
 
 ### Method 1: Manager (Recommended)
-If you have *ComfyUI-Manager*, you can click `Install via Git URL` and install these custom nodes `https://github.com/KLL535/ComfyUI_SimpleButcher.git`.
+If you have *ComfyUI-Manager*, you can click `Custom Nodes Manager` and find `ComfyUI_SimpleButcher`.
 
 ### Method 2: Manual
 In Windows:
