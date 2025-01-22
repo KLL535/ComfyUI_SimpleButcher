@@ -10,6 +10,6 @@ Repository = "https://github.com/KLL535/ComfyUI_SimpleButcher"
 #  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]
-PublisherId = "kll535"
+PublisherId = "@kll535"
 DisplayName = "ComfyUI_SimpleButcher"
 Icon = ""
