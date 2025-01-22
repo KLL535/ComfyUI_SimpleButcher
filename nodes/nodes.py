@@ -44,11 +44,11 @@ class SimpleLoadLineFromTextFile:
                 "load_file": ("BOOLEAN", {"default": True, "tooltip": "if True, load center of prompt from file"}),
                 "file_path": ("STRING", {"default": "", "tooltip": "Path to the file from which the lines for the central part of the prompt will be taken"}),
                 "next": (["increment", "decrement", "random", "random no repetitions"], {"default":"increment", "tooltip": "Option for enumerating lines, in case of randomness the start parameter is ignored"}),      
-                "count": ("INT", {"default": 0, "min": 0, "step": 1}),
             },
             "optional": {
                 "prefix": ("STRING", {"multiline": True, "default": "", "tooltip": "Add text to the beginning of the prompt"}),   
                 "postfix": ("STRING", {"multiline": True, "default": "", "tooltip": "Add text to the ending of the prompt"}),
+                "count": ("INT", {"default": 0, "min": 0, "step": 1}),
             }
         }
 
