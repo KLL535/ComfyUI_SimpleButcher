@@ -12,4 +12,4 @@ Repository = "https://github.com/KLL535/ComfyUI_SimpleButcher"
 [tool.comfy]
 PublisherId = "kll535"
 DisplayName = "ComfyUI_SimpleButcher"
-Icon = "📚"
+Icon = ""
