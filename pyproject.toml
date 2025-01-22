@@ -1,0 +1,15 @@
+[project]
+name = "simplebutcher"
+description = "I needed to automate the process of generating images and I did not find ready-made simple solutions for this, so I wrote my own. The idea is to repeat the functionality of forge: the script 'Prompts from file or textbox'. So that you can easily sort through pre-prepared lists of prompts, lora, styles, and connect text as you like. The resulting images must be compatible with Forge, and ideally, no different from it. The problem is that Forge uses the internal name from the Lora file metadata as the lora name, not the file name. Therefore, all existing solutions simply did not understand my templates. I would also like it if lore could be written in any order and any quantity in a text file in this format: <lora:name:1.0> or <lora:name:unet=1.0:te=0.75> and this would be applied automatically, without the need to create nodes for each lora separately. I would like the civitai site to understand metadata, the closest to this was the alexopus/ComfyUI-Image-Saver project, but it loses lora written in Forge style, by internal name."
+version = "1.0.0"
+license = {file = "LICENSE"}
+dependencies = ["piexif"]
+
+[project.urls]
+Repository = "https://github.com/KLL535/ComfyUI_SimpleButcher"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = ""
+DisplayName = "ComfyUI_SimpleButcher"
+Icon = ""
