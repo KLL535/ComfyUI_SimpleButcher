@@ -58,6 +58,12 @@ class SimpleLoadLineFromTextFile:
         self.random_list = []
 
     @classmethod
+    def IS_CHANGED(s, image):
+        #always update
+        m = hashlib.sha256().update(str(time.time()).encode("utf-8"))
+        return m.digest().hex()
+
+    @classmethod
     def INPUT_TYPES(cls):  
         return {
             "required": {     
@@ -215,6 +221,7 @@ class SimpleLoraLoader:
                     "multiple_strength_clip": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.05, "tooltip": "Multiple of clip strength"}),
                     "limit_strength_unet": ("FLOAT", {"default": 2.0, "min": -10.0, "max": 10.0, "step": 0.05, "tooltip": "Max of unet strength"}),
                     "limit_strength_clip": ("FLOAT", {"default": 2.0, "min": -10.0, "max": 10.0, "step": 0.05, "tooltip": "Max of clip strength"}),
+                    "count": ("INT", {"default": 1, "min": 0, "step": 1}),
                     }
                 }
 
@@ -232,7 +239,7 @@ class SimpleLoraLoader:
         json_lines = []
 
         for directory in path_list:
-          console_text = f"[\033[94mFind LoRA File in {directory}:\033[0m]"
+          console_text = f"[\033[94mFind LoRA File in {directory}\033[0m]"
           print(f"{console_text}")
           for root, dirs, files in os.walk(directory):
             for file in files:
@@ -275,31 +282,35 @@ class SimpleLoraLoader:
         with open(json_path, 'w') as file:
             json.dump(json_lines, file)      
 
-        txt_path = path_list[0] + "\\__txt"
-        if not os.path.exists(txt_path):
-            os.makedirs(txt_path, exist_ok=True)
+#        txt_path = path_list[0] + "\\__txt"
+#        if not os.path.exists(txt_path):
+#            os.makedirs(txt_path, exist_ok=True)
 
-        data_dict = {}
-        for name, value in name_lines:
-          if name not in data_dict:
-            data_dict[name] = []  
-          data_dict[name].append(value)
+#        data_dict = {}
+#        for name, value in name_lines:
+#          if name not in data_dict:
+#            data_dict[name] = []  
+#          data_dict[name].append(value)
 
-        for name, values in data_dict.items():
-          with open(txt_path+f"\\Lora in {name}.txt", "w", encoding="utf-8") as file:
-            for value in values:
-              file.write(f"{value}\n")  
+#        for name, values in data_dict.items():
+#          with open(txt_path+f"\\Lora in {name}.txt", "w", encoding="utf-8") as file:
+#            for value in values:
+#              file.write(f"{value}\n")  
 
         return ()  
 
 
-    def lora_loader(self, model, clip, lora_text, multiple_strength_unet = 1.0, multiple_strength_clip = 1.0, limit_strength_unet = 2.0, limit_strength_clip = 2.0):
+    def lora_loader(self, model, clip, lora_text, multiple_strength_unet = 1.0, multiple_strength_clip = 1.0, limit_strength_unet = 2.0, limit_strength_clip = 2.0, count = 1):
+
+        if count == 0:
+            print(f"\033[93mClick clear button\033[0m")
 
         lora_path_list = folder_paths.get_folder_paths("loras")
 
         json_path = os.path.join(lora_path_list[0],"lora_name.json")
 
-        if not os.path.isfile(json_path):
+        if (not os.path.isfile(json_path)) or (count == 0):
+            print(f"\033[93mLoad dictionary\033[0m")
             self.load_lora_name(lora_path_list)
             
         dic = []
@@ -587,3 +598,4 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "Simple Lora Loader": "Simple Lora Loader 📚",
     "Simple Image Saver (as Forge)": "Simple Image Saver (as Forge) 📚",
 }
+
