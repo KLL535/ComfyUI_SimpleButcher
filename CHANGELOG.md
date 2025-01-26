@@ -1,7 +1,8 @@
 # nightly
-fastest load LoRA hash
-add button "Update LoRA dictionary" in "Simple Lora Loader" for update lora_name.json
+- fastest load LoRA hash
+- add button **Update LoRA dictionary** in `Simple Lora Loader` for update lora_name.json
+- fixed skipping execute of `Simple Load Line From Text File` node
 # v1.0.1
-fix LoRA search in any path specified with extra_model_paths.yaml
+- fixed LoRA search in any path specified with **extra_model_paths.yaml**
 # v1.0.0
-first version
+- first commit
