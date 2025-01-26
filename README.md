@@ -9,7 +9,6 @@ The resulting images prompt in metadata must be compatible with **Forge**, ideal
 I also wish for the ability to write LoRA in any order and quantity within a text file using this format: `<lora:name:1.0>` or `<lora:name:unet=1.0:te=0.75>`. This should be automatically applied without the need to create separate nodes for each LoRA. Additionally, I would like it if the **CivitAI** platform could understand metadata. As the closest solution I found was the `alexopus/ComfyUI-Image-Saver` project. However, this alternative loses LoRA written in **Forge** style by using the internal name instead of the filename.
 
 ![workflow](https://github.com/user-attachments/assets/9014a2a0-c507-4872-b5eb-9a29b3b87518)
-[!] You need to remove the first node with empty text, so that it does not block the execution of the chain, since the text in it does not change.
 
 ## How to install?
 
@@ -56,7 +55,7 @@ If the input text includes LoRA written in `Forge` style, such as `<lora:name:1.
 
 ## Node 3: Simple Lora Loader
 This tool can load multiple LoRAs described in Forge style, such as `<lora:name:1.0>` or `<lora:name:unet=1.0:te=0.75>`. It recognizes both file names and internal LoRA names obtained from the metadata of `*.safetensors` files via the `ss_output_name` field.
-Upon initialization, it generates a `lora_name.json` dictionary, saving it in the LoRA folder to expedite future operations. Additionally, it creates a set of LoRA templates within the `__txt` directory. The hash values for all LoRAs are computed and stored once for efficient retrieval. For updates: if you update LoRAs place, add new LoRA, simply delete these files (`lora_name.json` and the LoRA templates) and press F5 in Confy-UI to reload them.
+When the workflow is first run, a dictionary `lora_name.json` is generated to store the lora paths, internal names and hash, and is saved in the LoRA folder to speed up future operations. Hash values ​​for all LoRA are calculated once and stored in `*.sha256` files next to each LoRA. If there are many files and the hash has not been calculated before, this process may take a long time. If you update LoRAs place, add new LoRA, simply click button `Update LoRA dictionary` and run workflow, this will update the file `lora_name.json`.
 
 #### Input:
 - `model` - *MODEL* - The diffusion model the LoRA will be applied to.  
@@ -65,17 +64,18 @@ Upon initialization, it generates a `lora_name.json` dictionary, saving it in th
 - `multiple_strength_unet` - *FLOAT* - Multiple of unet strength. If there is a lot of lore, they can spoil the model, it is possible to multiply the weight of all incoming lore by this coefficient.
 - `multiple_strength_clip` - *FLOAT* - Multiple of clip strength. 
 - `limit_strength_unet` - *FLOAT* - Max of unet strength. If there are a lot of lore, they can spoil the model, it is possible to limit the weight of all incoming lore to this number.
-- `limit_strength_clip` - *FLOAT* - Max of clip strength. 
+- `limit_strength_clip` - *FLOAT* - Max of clip strength.
+- `Update LoRA dictionary` - *Button* - Click this button and run workflow will update the file `lora_name.json` (if you update LoRAs place or add new LoRA).
 #### Output:
 - `model` - *MODEL* - Output diffusion model.  
 - `clip` - *CLIP* -  Output CLIP model.
 - `civitai_lora` - *STRING* - List of loras and their weights that were applied to the model.
 - `civitai_lora_hash` - *STRING* - The first 10 characters of the hash sum of the loras, needed for the **CivitAI** site.
   
-![c](https://github.com/user-attachments/assets/03116a8a-d5c2-4d50-9956-b655bd9e7d3f)
+![image](https://github.com/user-attachments/assets/0cbc124e-c73d-4254-811f-1b700eee5db9)
 
 ## Node 4: Simple Image Saver (as Forge)
-Image Saver designed for saved metadata in Forge-style, allowing retrieval of LoRAs' names and hashes directly from the `Simple LoRA Loader node`. This tool automatically organizes output images into subfolders based on the date. The filenames of the saved files include a sequence number and seed.
+Image Saver designed for saved metadata in Forge-style, allowing retrieval of LoRAs' names and hashes directly from the `Simple LoRA Loader node`. This tool automatically organizes output images into subfolders based on the date. The filenames of the saved files include a sequence number and seed. Hash values ​​for current model are calculated once and stored in *.sha256 files next to model.
 
 #### Input:
 - `images` - *IMAGE* - image(s) to save.
