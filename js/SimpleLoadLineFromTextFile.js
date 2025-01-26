@@ -5,25 +5,15 @@ app.registerExtension({
     name: "Simple Load Line From Text File",
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name === "Simple Load Line From Text File") {
-            const origOnNodeCreated = nodeType.prototype.onNodeCreated;
+            const originalOnNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = function() {
-                const r = origOnNodeCreated ? origOnNodeCreated.apply(this) : undefined;
+                if (originalOnNodeCreated) { originalOnNodeCreated.call(this); }
                 let counter = 0;
-                function find_count(w) { 
-                    return w.name === "count"
-                }
-                const count = this.widgets.find(find_count);
+                const count = this.widgets.find((w) => w.name === "count");
                 count.type = "converted-widget"; // hidden
-                function do_counter() { 
-                    return counter++; 
-                }
-                count.serializeValue = do_counter;
-                function reset_counter() { 
-                    counter = 0;
-                }
-                api.addEventListener("promptQueued", reset_counter); // reset
-                return r;
-            }
+                count.serializeValue = () => { return counter++; }
+                api.addEventListener("promptQueued", () => { counter = 0; }); // reset
+            };
         }
-    }
-})
+    },
+});
