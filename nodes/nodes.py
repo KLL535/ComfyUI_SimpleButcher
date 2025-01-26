@@ -19,8 +19,6 @@ from PIL import Image
 from PIL.PngImagePlugin import PngInfo
 from typing import Dict
 
-LORA_PATH = folder_paths.folder_names_and_paths["loras"][0][0]
-
 class AnyType(str):
   def __ne__(self, __value: object) -> bool:
     return False
@@ -213,61 +211,59 @@ class SimpleLoraLoader:
                 hasher.update(data)
         return hasher.hexdigest()
 
-    def load_lora_name(self):
+    def load_lora_name(self, path_list):
 
-        directory = LORA_PATH
-        json_path = os.path.join(directory,"lora_name.json")
+        json_path = os.path.join(path_list[0],"lora_name.json")
 
         name_lines = []
         json_lines = []
 
-        console_text = f"[\033[94mLora File:\033[0m]"
-        print(f"{console_text}")
-
-        for root, dirs, files in os.walk(directory):
-          for file in files:
-            if file.endswith(".safetensors"):
-              full_filepath = os.path.join(root, file)
-              filepath = full_filepath.replace(directory+"\\", "")
-              lora_name1 = os.path.splitext(file)[0]
-              lora_name2 = "None"
-              with safe_open(full_filepath, framework="pt", device="cpu") as f:
-                  if f.metadata() != None:
-                      if "ss_output_name" in f.metadata():
-                          lora_name2 = f.metadata()["ss_output_name"]
-                          if lora_name2 == "lora":
-                              lora_name2 = "None"
-                          if lora_name2 == "":
-                              lora_name2 = "None"
-                      #elif "modelspec.title" in f.metadata():
-                      #    lora_name2 = f.metadata()["modelspec.title"]
+        for directory in path_list:
+          console_text = f"[\033[94mFind LoRA File in {directory}:\033[0m]"
+          print(f"{console_text}")
+          for root, dirs, files in os.walk(directory):
+            for file in files:
+              if file.endswith(".safetensors"):
+                full_filepath = os.path.join(root, file)
+                filepath = full_filepath.replace(directory+"\\", "")
+                lora_name1 = os.path.splitext(file)[0]
+                lora_name2 = "None"
+                with safe_open(full_filepath, framework="pt", device="cpu") as f:
+                    if f.metadata() != None:
+                        if "ss_output_name" in f.metadata():
+                            lora_name2 = f.metadata()["ss_output_name"]
+                            if lora_name2 == "lora":
+                                lora_name2 = "None"
+                            if lora_name2 == "":
+                                lora_name2 = "None"
+                        #elif "modelspec.title" in f.metadata():
+                        #    lora_name2 = f.metadata()["modelspec.title"]
               
-              hash_value = self.file_sha256(full_filepath)
-              hash_value_10_chars = hash_value[:10]              
+                hash_value = self.file_sha256(full_filepath)
+                hash_value_10_chars = hash_value[:10]              
 
-              subdirectory = os.path.dirname(filepath)
-              if subdirectory == "":
-                subdirectory = "root"
-              subdirectory = subdirectory.replace("\\","_")
+                subdirectory = os.path.dirname(filepath)
+                if subdirectory == "":
+                  subdirectory = "root"
+                subdirectory = subdirectory.replace("\\","_")
 
-              if lora_name2 == "None":
-                  console_text = f"[\033[95m{hash_value_10_chars}\033[0m] {filepath} -> \033[91m{lora_name2}\033[0m"
-                  name_lines.append([subdirectory,"<lora:"+lora_name1+":1.0>"])
-              else:
-                  console_text = f"[\033[95m{hash_value_10_chars}\033[0m] {filepath} -> \033[92m{lora_name2}\033[0m"
-                  name_lines.append([subdirectory,"<lora:"+lora_name2+":1.0>"])
-              print(f"{console_text}")
+                if lora_name2 == "None":
+                    console_text = f"[\033[95m{hash_value_10_chars}\033[0m] {filepath} -> \033[91m{lora_name2}\033[0m"
+                    name_lines.append([subdirectory,"<lora:"+lora_name1+":1.0>"])
+                else:
+                    console_text = f"[\033[95m{hash_value_10_chars}\033[0m] {filepath} -> \033[92m{lora_name2}\033[0m"
+                    name_lines.append([subdirectory,"<lora:"+lora_name2+":1.0>"])
+                print(f"{console_text}")
 
-              json_lines.append([filepath,lora_name1,lora_name2,hash_value_10_chars])
+                json_lines.append([filepath,lora_name1,lora_name2,hash_value_10_chars])
 
-        console_text = "End"
-        console_text = f"[\033[94m{console_text}\033[0m]"
-        print(f"{console_text}")
+          console_text = f"[\033[94mEnd\033[0m]"
+          print(f"{console_text}")
 
         with open(json_path, 'w') as file:
             json.dump(json_lines, file)      
 
-        txt_path = directory + "\\__txt"
+        txt_path = path_list[0] + "\\__txt"
         if not os.path.exists(txt_path):
             os.makedirs(txt_path, exist_ok=True)
 
@@ -287,10 +283,12 @@ class SimpleLoraLoader:
 
     def lora_loader(self, model, clip, lora_text, multiple_strength_unet = 1.0, multiple_strength_clip = 1.0, limit_strength_unet = 2.0, limit_strength_clip = 2.0):
 
-        json_path = os.path.join(LORA_PATH,"lora_name.json")
+        lora_path_list = folder_paths.get_folder_paths("loras")
+
+        json_path = os.path.join(lora_path_list[0],"lora_name.json")
 
         if not os.path.isfile(json_path):
-            self.load_lora_name()
+            self.load_lora_name(lora_path_list)
             
         dic = []
         if os.path.isfile(json_path):
