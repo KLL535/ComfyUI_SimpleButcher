@@ -1,7 +1,7 @@
 [project]
 name = "simplebutcher"
 description = "Node to automate batch generation with randomize prompts from text files. It mimics Forge's functionality, allowing you to combine text elements and LoRA. The node supports writing LoRA in any order within a text file using formats like <lora:name:1.0> or <lora:name:unet=1.0:te=0.75>, without needing separate nodes. The node understands LoRA names in Forge's style, when the name is not the filename, but the internal name from the metadata."
-version = "1.0.0"
+version = "1.0.1"
 license = {file = "LICENSE"}
 dependencies = ["piexif"]
 
