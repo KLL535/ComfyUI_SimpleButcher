@@ -25,6 +25,29 @@ class AnyType(str):
 
 any = AnyType("*")
 
+def get_sha256(self, file_path: str):
+    file_no_ext = os.path.splitext(file_path)[0]
+    hash_file = file_no_ext + ".sha256"
+
+    if os.path.exists(hash_file):
+        try:
+            with open(hash_file, "r") as f:
+                return f.read().strip()
+        except OSError as e:
+            print(f"Error reading existing hash file: {e}")
+
+    sha256_hash = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        for byte_block in iter(lambda: f.read(4096), b""):
+            sha256_hash.update(byte_block)
+    try:
+        with open(hash_file, "w") as f:
+            f.write(sha256_hash.hexdigest())
+    except OSError as e:
+        print(f"Error writing hash to {hash_file}: {e}")
+
+    return sha256_hash.hexdigest()
+
 ################################
 
 class SimpleLoadLineFromTextFile:     
@@ -201,16 +224,6 @@ class SimpleLoraLoader:
     CATEGORY = "📚 SimpleButcher"
     DESCRIPTION = "Multiple LoRAs loader, understands discriptions in Forge style: <lora:name:1.0> or <lora:name:unet=1.0:te=0.75>. Understands both file names and internal lore names (Forge style). Once creates a lora_name.json dictionary and places it in the lora folder to speed up. Once creates a lora templates to __txt folder. In case of lora update just delete these files and press F5 in confy-ui."
 
-    def file_sha256(self, filename):
-        hasher = hashlib.sha256()
-        with open(filename, 'rb') as f:
-            while True:
-                data = f.read(65536)  # Read in 64k chunks
-                if not data:
-                    break
-                hasher.update(data)
-        return hasher.hexdigest()
-
     def load_lora_name(self, path_list):
 
         json_path = os.path.join(path_list[0],"lora_name.json")
@@ -239,8 +252,7 @@ class SimpleLoraLoader:
                         #elif "modelspec.title" in f.metadata():
                         #    lora_name2 = f.metadata()["modelspec.title"]
               
-                hash_value = self.file_sha256(full_filepath)
-                hash_value_10_chars = hash_value[:10]              
+                hash_value_10_chars = get_sha256(self,full_filepath)[:10]    
 
                 subdirectory = os.path.dirname(filepath)
                 if subdirectory == "":
@@ -459,7 +471,6 @@ class SimpleImageSaver:
     OUTPUT_NODE = True
     DESCRIPTION = "Image Saver with metadata in Forge style. Loras name and hash could be obtained from Simple Lora Loader node. Сreated subfolders with date, output files contain a sequence number and seed, as Forge does."
 
-
     def find_free_number(self, path):
         i = -1
         for filename in os.listdir(path):
@@ -472,31 +483,6 @@ class SimpleImageSaver:
                 if new > i:
                     i = new
         return i+1
-
-    def get_sha256(self, file_path: str):
-        file_no_ext = os.path.splitext(file_path)[0]
-        hash_file = file_no_ext + ".sha256"
-
-        if os.path.exists(hash_file):
-            try:
-                with open(hash_file, "r") as f:
-                    return f.read().strip()
-            except OSError as e:
-                print(f"ComfyUI-Image-Saver: Error reading existing hash file: {e}")
-
-        sha256_hash = hashlib.sha256()
-        with open(file_path, "rb") as f:
-            for byte_block in iter(lambda: f.read(4096), b""):
-                sha256_hash.update(byte_block)
-
-        try:
-            with open(hash_file, "w") as f:
-                f.write(sha256_hash.hexdigest())
-        except OSError as e:
-            print(f"ComfyUI-Image-Saver: Error writing hash to {hash_file}: {e}")
-
-        return sha256_hash.hexdigest()
-
 
     def image_saver(self, images, prompt, output_path, SEED, modelname, steps=0, sampler=None, schedule=None, CFG_scale=0.0, distilled_CFG_scale=0.0, width=0, height=0, beta_schedule_alpha=0.0, beta_schedule_beta=0.0, civitai_lora="", civitai_lora_hash="",negative=""):
 
@@ -556,7 +542,7 @@ class SimpleImageSaver:
             if not ckpt_path:
                 ckpt_path = folder_paths.get_full_path("diffusion_models", modelname)
             if ckpt_path:
-                modelhash = self.get_sha256(ckpt_path)[:10]
+                modelhash = get_sha256(self,ckpt_path)[:10]
             else:
                 modelhash = ""
             metadata_text = metadata_text + "Model hash: "+modelhash+", "
@@ -601,4 +587,3 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "Simple Lora Loader": "Simple Lora Loader 📚",
     "Simple Image Saver (as Forge)": "Simple Image Saver (as Forge) 📚",
 }
-
