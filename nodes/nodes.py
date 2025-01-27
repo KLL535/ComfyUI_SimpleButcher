@@ -59,11 +59,9 @@ class SimpleLoadLineFromTextFile:
         self.random_list = []
 
     @classmethod
-    def IS_CHANGED(s, start = 0, load_file = False, file_path = "", next = "increment", prefix = "", postfix = "", count = 0):
+    def IS_CHANGED(s, **kwargs):
         #always update
-        m = hashlib.sha256()
-        m.update(str(time.time()).encode("utf-8"))
-        return m.digest().hex()
+        return float("NaN")
 
     @classmethod
     def INPUT_TYPES(cls):  
