@@ -10,6 +10,12 @@ I also wish for the ability to write LoRA in any order and quantity within a tex
 
 ![workflow](https://github.com/user-attachments/assets/9014a2a0-c507-4872-b5eb-9a29b3b87518)
 
+### Caution:
+[!] This nodes create a new file in LoRA/Model ditectory:
+- files `*.sha256` next to LoRA, the file contains the hash sum of the LoRA file.
+- files `*.sha256` next to model, the file contains the hash sum of the model file.
+- file `lora_name.json` in first LoRA folder (default path `ComfyUI\models\loras\`).
+
 ## How to install?
 
 ### Method 1: Manager (Recommended)
