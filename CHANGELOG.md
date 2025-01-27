@@ -1,4 +1,4 @@
-# nightly
+# v1.0.2
 - fastest load LoRA hash
 - add button **Update LoRA dictionary** in `Simple Lora Loader` for update lora_name.json
 - fixed skipping execute of `Simple Load Line From Text File` node
