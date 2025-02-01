@@ -1,6 +1,10 @@
+# nightly
+# v1.0.3
+- fix random
+- add node Simple Load Image With Metadata
 # v1.0.2
 - fastest load LoRA hash
-- add button **Update LoRA dictionary** in `Simple Lora Loader` for update lora_name.json
+- add button **Update LoRA dictionary** in `Simple Lora Loader` for update **lora_name.json**
 - fixed skipping execute of `Simple Load Line From Text File` node
 # v1.0.1
 - fixed LoRA search in any path specified with **extra_model_paths.yaml**

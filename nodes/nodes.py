@@ -12,12 +12,14 @@ import folder_paths
 import requests 
 import piexif
 import time
+import secrets
 
 from safetensors import safe_open
 from collections import deque
 from datetime import datetime
 from PIL import Image
 from PIL.PngImagePlugin import PngInfo
+from PIL import ExifTags
 from typing import Dict
 
 class AnyType(str):
@@ -49,6 +51,10 @@ def get_sha256(self, file_path: str):
 
     return sha256_hash.hexdigest()
 
+def generate_unique_seed():
+    return time.time_ns() ^ secrets.randbits(64)
+    #return time.time_ns()
+
 ################################
 
 class SimpleLoadLineFromTextFile:     
@@ -57,6 +63,7 @@ class SimpleLoadLineFromTextFile:
         self.batch_counter = 0
         self.line_counter = 0
         self.random_list = []
+        self.my_random = random.Random() #isolated generator
 
     @classmethod
     def IS_CHANGED(s, **kwargs):
@@ -65,11 +72,14 @@ class SimpleLoadLineFromTextFile:
 
     @classmethod
     def INPUT_TYPES(cls):  
+        #input_dir = folder_paths.get_input_directory()
+        #files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
         return {
-            "required": {     
+            "required": {   
+                "name": ("STRING", {"default": "", "multiline": False, "tooltip": "Node name"}), 
                 "start": ("INT", {"default": 0, "min": 0, "step": 1, "tooltip": "Start position for increment or decrement methods"}),
                 "load_file": ("BOOLEAN", {"default": True, "tooltip": "if True, load center of prompt from file"}),
-                "file_path": ("STRING", {"default": "", "tooltip": "Path to the file from which the lines for the central part of the prompt will be taken"}),
+                "file_path": ("STRING", {"default": "", "multiline": False, "tooltip": "Path to the file from which the lines for the central part of the prompt will be taken"}),
                 "next": (["increment", "decrement", "random", "random no repetitions"], {"default":"increment", "tooltip": "Option for enumerating lines, in case of randomness the start parameter is ignored"}),      
             },
             "optional": {
@@ -85,7 +95,7 @@ class SimpleLoadLineFromTextFile:
     CATEGORY = "📚 SimpleButcher"
     DESCRIPTION = "Simple prompt loader from a text file to automate the batch process. Can be combined with each other and create total randomness text and lora that is taken from your text and lora templates"
 
-    def read_text_file(self, start = 0, load_file = False, file_path = "", next = "increment", prefix = "", postfix = "", count = 0):
+    def read_text_file(self, name = "", start = 0, load_file = False, file_path = "", next = "increment", prefix = "", postfix = "", count = 0):
 
         if count == 0:
             self.batch_counter = 0
@@ -102,7 +112,7 @@ class SimpleLoadLineFromTextFile:
             file_path = os.path.expandvars(file_path)
             if not os.path.isfile(file_path):
                 raise FileNotFoundError(f"The file at path '{file_path}' does not exist.")
-            with open(file_path, 'r', encoding='utf-8') as file:
+            with open(file_path, 'r', encoding='ISO-8859-1') as file: #utf-8
                 lines = file.readlines()
             
             for line in lines:
@@ -122,19 +132,28 @@ class SimpleLoadLineFromTextFile:
 
             if next == "random no repetitions":
                 if count == 0:
-                    # generate random numbers
-                    print(f"\033[93mRandomize\033[0m")
+                    # save random numbers
+                    random_seed = generate_unique_seed()
+                    #print(f"\033[93m{random_seed}\033[0m")
+                    self.my_random.seed(random_seed)
                     self.random_list = list(range(0, line_count))
-                    random.shuffle(self.random_list)
-                self.line_counter = self.random_list[self.batch_counter % len(self.random_list)]
+                    self.my_random.shuffle(self.random_list)
+                rnd = self.batch_counter % len(self.random_list)
+                self.line_counter = self.random_list[rnd]
             elif next == "random":
-                self.line_counter = random.randint(0, line_count-1)
+                if count == 0:
+                    # randomize
+                    random_seed = generate_unique_seed()
+                    #print(f"\033[93m{random_seed}\033[0m")
+                    self.my_random.seed(random_seed)
+                rnd = self.my_random.randint(0, line_count-1)
+                self.line_counter = rnd
 
             self.line_counter = self.line_counter % line_count
             text = text + lines2[self.line_counter]
             current_line = self.line_counter
 
-            console_text = f"[\033[95mBatch: {self.batch_counter}\033[0m -> \033[92mLine: {str(current_line)}/{str(line_count)}\033[0m]"
+            console_text = f"[\033[95mBatch {name}: {self.batch_counter}\033[0m -> \033[92mLine: {str(current_line)}/{str(line_count)}\033[0m]"
             print(f"{console_text}")
 
             if next == "increment":
@@ -144,7 +163,7 @@ class SimpleLoadLineFromTextFile:
                 if self.line_counter < 0:
                     self.line_counter = line_count-1
         else:
-            console_text = f"[\033[95mBatch: {self.batch_counter}\033[0m]"
+            console_text = f"[\033[95mBatch {name}: {self.batch_counter}\033[0m -> Skip"
             print(f"{console_text}")
                     
         if postfix != "":
@@ -153,7 +172,6 @@ class SimpleLoadLineFromTextFile:
         text = text.replace("\r","")
         text = text.replace("\n"," ")
         text = text.replace("<"," <")
-        text = text.replace("  "," ")
         
         return (text,self.batch_counter,current_line,line_count)
 
@@ -181,11 +199,7 @@ class SimpleExtractLoraFromText:
 
         text_loras = re.findall(r'<lora:[^>]*>', text)
         text_lora = ' '.join(text_loras)
-
         text_lora = text_lora.strip()
-        text_lora = text_lora.replace("  "," ")
-
-        text_lora2 = text_lora.replace('\n',' ')
 
         #text_prompt = ' '.join(s for s in text.split() if not (s.startswith("<") and s.endswith(">")))
         #text_prompt = ' '.join(word for word in text.split() if not re.search('<.*?>', word)) 
@@ -329,6 +343,8 @@ class SimpleLoraLoader:
         for item in self.loaded_lora:
             item[2] = False
 
+        unique_elements = set()
+
         for lora in loras:
             lora = lora.replace("<lora:","")
             lora = lora.replace(">","")
@@ -336,22 +352,35 @@ class SimpleLoraLoader:
             lora_prompt_name = parts[0]
             lora_path = ""
             lora_hash = ""
-            for item in dic: # find filename
+
+            #find by filename
+            for item in dic: 
                 if item[1] == lora_prompt_name:
                     lora_path = item[0]
                     lora_hash = item[3]
                     break
+
+            #or find by internal lora name
             if lora_path == "":
-                for item in dic: # or find lora name
+                for item in dic: 
                     if item[2] == lora_prompt_name:
                         lora_path = item[0]
                         lora_hash = item[3]
                         break
+
+            #not found
             if lora_path == "":
-                console_text = "-Lora: "+lora_prompt_name
-                console_text = f"[\033[91m{console_text}\033[0m]"
+                console_text = f"[\033[91m-Lora: {lora_prompt_name}\033[0m] not found"
                 print(f"{console_text}")
                 continue
+
+            #skip duplicate
+            if lora_path in unique_elements:
+               console_text = f"[\033[91m-Lora: {lora_path}\033[0m] skip duplicate"
+               print(f"{console_text}")
+               continue
+
+            unique_elements.add(lora_path) 
 
 ##########################
 ##### parce strength #####
@@ -471,7 +500,11 @@ class SimpleImageSaver:
                     "civitai_lora": ("STRING",  {"default": '', "multiline": False, "tooltip": "STRING, Loras name from Simple Lora Loader node", "forceInput": True}),
                     "civitai_lora_hash": ("STRING",  {"default": '', "multiline": False, "tooltip": "STRING, Loras hash from Simple Lora Loader node", "forceInput": True}),
                     "negative": ("STRING",  {"default": '', "multiline": False, "tooltip": "STRING, Negative prompt", "forceInput": True}),
-            }
+                    "save_workflow": ("BOOLEAN", {"default": False, "tooltip": "if True, saves workflow in the image"}),  
+            },
+            "hidden": {
+                "extra_pnginfo": "EXTRA_PNGINFO",
+            },
         }
 
     RETURN_TYPES = ("STRING",)
@@ -495,7 +528,7 @@ class SimpleImageSaver:
                     i = new
         return i+1
 
-    def image_saver(self, images, prompt, output_path, SEED, modelname, steps=0, sampler=None, schedule=None, CFG_scale=0.0, distilled_CFG_scale=0.0, width=0, height=0, beta_schedule_alpha=0.0, beta_schedule_beta=0.0, civitai_lora="", civitai_lora_hash="",negative=""):
+    def image_saver(self, images, prompt, output_path, SEED, modelname, steps=0, sampler=None, schedule=None, CFG_scale=0.0, distilled_CFG_scale=0.0, width=0, height=0, beta_schedule_alpha=0.0, beta_schedule_beta=0.0, civitai_lora="", civitai_lora_hash="",negative="",save_workflow=False,extra_pnginfo=None):
 
         metadata_text = ""
 
@@ -525,11 +558,11 @@ class SimpleImageSaver:
 ####################
 ##### metadata #####
 
-            metadata_text = prompt
+            prompt_and_lora = prompt
             if civitai_lora != "":
-                metadata_text = metadata_text + ' ' + civitai_lora
+                prompt_and_lora = prompt_and_lora + ' ' + civitai_lora
 
-            metadata_text = metadata_text + '\n' 
+            metadata_text = prompt_and_lora + '\n' 
 
             if negative != "":
                 metadata_text = metadata_text + "Negative prompt: "+ negative + '\n'
@@ -556,10 +589,12 @@ class SimpleImageSaver:
                 modelhash = get_sha256(self,ckpt_path)[:10]
             else:
                 modelhash = ""
-            metadata_text = metadata_text + "Model hash: "+modelhash+", "
+            if modelhash != "":
+                metadata_text = metadata_text + "Model hash: "+modelhash+", "
             modelname = os.path.basename(modelname)
             modelname = os.path.splitext(modelname)[0]
-            metadata_text = metadata_text + "Model: "+modelname+", "
+            if modelname != "":
+                metadata_text = metadata_text + "Model: "+modelname+", "
             
             if beta_schedule_alpha != 0.0:
                 metadata_text = metadata_text + "Beta schedule alpha: "+str(beta_schedule_alpha)+", "
@@ -571,12 +606,20 @@ class SimpleImageSaver:
 
             metadata_text = metadata_text + "Version: ComfyUI"
 
+            metadata = PngInfo()
+            metadata.add_text("parameters", metadata_text)
+
+            if save_workflow:
+                if prompt_and_lora != "":
+                    metadata.add_text("prompt", prompt_and_lora)
+                if extra_pnginfo is not None:
+                    for x in extra_pnginfo:
+                        print(f"Write {x}")
+                        metadata.add_text(x, json.dumps(extra_pnginfo[x]))
+            
 ##### metadata #####
 ####################
 
-            metadata = PngInfo()
-            metadata.add_text("parameters", metadata_text)
-            
             filename = f"{free_number:05d}-{seed_text}.png"
             img.save(os.path.join(output_path, filename), pnginfo=metadata, optimize=False)
 
@@ -585,11 +628,72 @@ class SimpleImageSaver:
 
 ################################
 
+class SimpleLoadImageWithMetadataString:
+    @classmethod
+    def INPUT_TYPES(s):
+        input_dir = folder_paths.get_input_directory()
+        files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
+        return {"required":
+                    {"image": (sorted(files), )},
+                }
+    CATEGORY = "📚 SimpleButcher"
+    RETURN_TYPES = ("IMAGE", "MASK", "STRING", "STRING")
+    RETURN_NAMES = ("image", "mask", "metadata_forge", "prompt")
+    FUNCTION = "read_image"
+    DESCRIPTION = "Load Image with metadata in simple string!"
+
+    def read_image(self, image):
+        image_path = folder_paths.get_annotated_filepath(image)
+        i = Image.open(image_path)
+        image = i.convert("RGB")
+        image = np.array(image).astype(np.float32) / 255.0
+        image = torch.from_numpy(image)[None,]
+        if 'A' in i.getbands():
+            mask = np.array(i.getchannel('A')).astype(np.float32) / 255.0
+            mask = 1. - torch.from_numpy(mask)
+        else:
+            mask = torch.zeros((64,64), dtype=torch.float32, device="cpu")
+        width = i.width
+        height = i.height
+        format = i.format
+        metadata = i.info
+
+        #exif_workflow = ""
+        #if "workflow" in metadata:
+        #  exif_workflow = metadata["workflow"]
+
+        exif_prompt = ""
+        if "prompt" in metadata:
+          exif_prompt = metadata["prompt"]
+        
+        exif_metadata = ""
+        if "parameters" in metadata:
+          exif_metadata = metadata["parameters"]
+
+        return (image, mask, exif_metadata, exif_prompt)
+
+    @classmethod
+    def IS_CHANGED(s, image):
+        image_path = folder_paths.get_annotated_filepath(image)
+        m = hashlib.sha256()
+        with open(image_path, 'rb') as f:
+            m.update(f.read())
+        return m.digest().hex()
+
+    @classmethod
+    def VALIDATE_INPUTS(s, image):
+        if not folder_paths.exists_annotated_filepath(image):
+            return "Invalid image file: {}".format(image)
+        return True
+
+################################
+
 NODE_CLASS_MAPPINGS = { 
     "Simple Load Line From Text File": SimpleLoadLineFromTextFile,
     "Simple Extract Lora From Text": SimpleExtractLoraFromText,
     "Simple Lora Loader": SimpleLoraLoader,
-    "Simple Image Saver (as Forge)": SimpleImageSaver
+    "Simple Image Saver (as Forge)": SimpleImageSaver,
+    "Simple Load Image With Metadata": SimpleLoadImageWithMetadataString,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -597,5 +701,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "Simple Extract Lora From Text": "Simple Extract Lora From Text 📚",
     "Simple Lora Loader": "Simple Lora Loader 📚",
     "Simple Image Saver (as Forge)": "Simple Image Saver (as Forge) 📚",
+    "Simple Load Image With Metadata": "Simple Load Image With Metadata 📚",
 }
 
