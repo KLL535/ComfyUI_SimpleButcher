@@ -482,12 +482,12 @@ class SimpleImageSaver:
         return {
             "required": {
                     "images": ("IMAGE", { "tooltip": "image(s) to save", "forceInput": True}),
-                    "prompt": ("STRING", {"default": "", "multiline": False, "tooltip": "STRING", "forceInput": True}),
                     "output_path": ("STRING", {"default": "", "multiline": False, "tooltip": "Path where images will be saved"}),
-                    "SEED": ("INT",  {"default": '0', "tooltip": "INT", "forceInput": True}),
-                    "modelname": ("STRING",  {"default": '', "multiline": False, "tooltip": "STRING, use Checkpoint Loader with Name (Image Saver) node", "forceInput": True}),
             },
             "optional": {
+                    "prompt_text": ("STRING", {"default": "", "multiline": False, "tooltip": "STRING", "forceInput": True}),
+                    "SEED": ("INT",  {"default": None, "tooltip": "INT", "forceInput": True}),
+                    "modelname": ("STRING",  {"default": '', "multiline": False, "tooltip": "STRING, use Checkpoint Loader with Name (Image Saver) node", "forceInput": True}),
                     "steps": ("INT", {"default": 0, "tooltip": "INT", "forceInput": True}),
                     "sampler": (any, {"default": None, "tooltip": "ANY, use Sampler Selector (Image Saver) node", "forceInput": True}),
                     "schedule": (any, {"default": None, "tooltip": "ANY, use Scheduler Selector (Image Saver) node", "forceInput": True}),
@@ -500,10 +500,15 @@ class SimpleImageSaver:
                     "civitai_lora": ("STRING",  {"default": '', "multiline": False, "tooltip": "STRING, Loras name from Simple Lora Loader node", "forceInput": True}),
                     "civitai_lora_hash": ("STRING",  {"default": '', "multiline": False, "tooltip": "STRING, Loras hash from Simple Lora Loader node", "forceInput": True}),
                     "negative": ("STRING",  {"default": '', "multiline": False, "tooltip": "STRING, Negative prompt", "forceInput": True}),
-                    "save_workflow": ("BOOLEAN", {"default": False, "tooltip": "if True, saves workflow in the image"}),  
+                    "save_comfy_workflow": ("BOOLEAN", {"default": True, "tooltip": "if True, saves workflow in the image"}),  
+                    "save_comfy_prompt": ("BOOLEAN", {"default": False, "tooltip": "if True, saves workflow in the image"}),  
+                    "override_parameters": ("STRING", {"default": None, "multiline": False, "tooltip": "If present, this text will be written to image metadata (parameters)", "forceInput": True}), 
+                    "override_workflow": ("STRING", {"default": None, "multiline": False, "tooltip": "If present, this text will be written to image metadata (workflow)", "forceInput": True}),
+                    "override_prompt": ("STRING", {"default": None, "multiline": False, "tooltip": "If present, this text will be written to image metadata (prompt)", "forceInput": True}),   
             },
             "hidden": {
-                "extra_pnginfo": "EXTRA_PNGINFO",
+                    "prompt": "PROMPT", 
+                    "extra_pnginfo": "EXTRA_PNGINFO",
             },
         }
 
@@ -528,21 +533,122 @@ class SimpleImageSaver:
                     i = new
         return i+1
 
-    def image_saver(self, images, prompt, output_path, SEED, modelname, steps=0, sampler=None, schedule=None, CFG_scale=0.0, distilled_CFG_scale=0.0, width=0, height=0, beta_schedule_alpha=0.0, beta_schedule_beta=0.0, civitai_lora="", civitai_lora_hash="",negative="",save_workflow=False,extra_pnginfo=None):
+    def parse_parameters(self, text):
+        pattern = r"\s*,\s*(?![^\"]*\"\,)"
+        items = re.split(pattern, text)
+        params = {}
+        for item in items:
+            if ":" in item:
+                key, value = item.split(":", 1) 
+                params[key.strip()] = value.strip()
+        return params
 
-        metadata_text = ""
+    def image_saver(self, images, output_path, prompt_text = "", SEED = None, modelname = "", steps=0, sampler=None, schedule=None, CFG_scale=0.0, distilled_CFG_scale=0.0, width=0, height=0, beta_schedule_alpha=0.0, beta_schedule_beta=0.0, civitai_lora="", civitai_lora_hash="", negative="", save_comfy_workflow=True, save_comfy_prompt=False, override_parameters=None, override_workflow=None, override_prompt=None, prompt=None, extra_pnginfo=None):
 
         now = datetime.now()
         date = now.strftime("%Y-%m-%d")
 
         output_path = output_path.strip()
         if output_path == '':
-            return ()
+            return ("",)
 
         output_path = os.path.join(output_path, date)
 
         if not os.path.exists(output_path):
             os.makedirs(output_path, exist_ok=True)
+
+        seed_text = ""
+        if SEED != None:
+          seed_text = str(SEED)
+
+##### metadata parameters (Forge style) #####
+        
+        forge = ""
+        if override_parameters == None:
+
+            prompt_and_lora = prompt_text
+            if civitai_lora != "":
+                prompt_and_lora = prompt_and_lora + ' ' + civitai_lora
+
+            forge = prompt_and_lora + '\n' 
+
+            if negative != "":
+                forge = forge + "Negative prompt: "+ negative + '\n'
+
+            if steps != 0:
+                forge = forge + "Steps: "+str(steps)+", "
+            if sampler != None:
+                forge = forge + "Sampler: "+str(sampler)+", "
+            if schedule != None:
+                forge = forge + "Schedule type: "+str(schedule)+", "
+            if CFG_scale != 0.0:
+                forge = forge + "CFG scale: "+str(CFG_scale)+", "
+            if distilled_CFG_scale != 0.0:
+                forge = forge + "Distilled CFG Scale: "+str(distilled_CFG_scale)+", "
+            forge = forge + "Seed: "+seed_text+", "
+            if width != 0:
+                if height != 0:
+                    forge = forge + "Size: " + str(width) + "x" + str(height) + ", "
+
+            if modelname != "":
+                ckpt_path = folder_paths.get_full_path("checkpoints", modelname)
+                if not ckpt_path:
+                    ckpt_path = folder_paths.get_full_path("diffusion_models", modelname)
+                if ckpt_path:
+                    modelhash = get_sha256(self,ckpt_path)[:10]
+                else:
+                    modelhash = ""
+                if modelhash != "":
+                    forge = forge + "Model hash: "+modelhash+", "
+                modelname = os.path.basename(modelname)
+                modelname = os.path.splitext(modelname)[0]
+                if modelname != "":
+                    forge = forge + "Model: "+modelname+", "
+            
+            if beta_schedule_alpha != 0.0:
+                forge = forge + "Beta schedule alpha: "+str(beta_schedule_alpha)+", "
+            if beta_schedule_beta != 0.0:
+                forge = forge + "Beta schedule beta: "+str(beta_schedule_beta)+", "
+
+            if civitai_lora_hash != "":
+                forge = forge + "Lora hashes: \"" + civitai_lora_hash + "\", "
+
+            forge = forge + "Version: ComfyUI"
+        else:
+            forge = override_parameters
+            params = self.parse_parameters(forge)
+            seed = params.get("Seed")
+            if seed is not None:
+                seed_text = seed
+
+##### metadata prompt (Сomfy-ui style) #####
+
+        prompt_json = ""
+        if save_comfy_prompt:
+            if override_prompt == None:
+                if prompt is not None:
+                    try:
+                        prompt_json = json.dumps(prompt)
+                    except Exception as e:
+                        print(f"\033[91mJSON coding error (prompt)\033[0m")
+            else:
+                prompt_json = override_prompt
+
+##### metadata workflow (Сomfy-ui style) #####
+
+        workflow_json = ""
+        if save_comfy_workflow:
+            if override_workflow == None:
+                if extra_pnginfo is not None:
+                    if "workflow" in extra_pnginfo:
+                        try:
+                            workflow_json = json.dumps(extra_pnginfo["workflow"])
+                        except Exception as e:
+                            print(f"\033[91mJSON coding error (workflow)\033[0m")
+            else:
+                workflow_json = override_workflow
+
+##### images #####
 
         for image in images:
             i = 255. * image.cpu().numpy()
@@ -551,79 +657,25 @@ class SimpleImageSaver:
             free_number = self.find_free_number(output_path)
             if free_number > 99999:
                 print(f"\033[91mToo many files\033[0m")
-                return ()
-
-            seed_text = str(SEED)
-
-####################
-##### metadata #####
-
-            prompt_and_lora = prompt
-            if civitai_lora != "":
-                prompt_and_lora = prompt_and_lora + ' ' + civitai_lora
-
-            metadata_text = prompt_and_lora + '\n' 
-
-            if negative != "":
-                metadata_text = metadata_text + "Negative prompt: "+ negative + '\n'
-
-            if steps != 0:
-                metadata_text = metadata_text + "Steps: "+str(steps)+", "
-            if sampler != None:
-                metadata_text = metadata_text + "Sampler: "+str(sampler)+", "
-            if schedule != None:
-                metadata_text = metadata_text + "Schedule type: "+str(schedule)+", "
-            if CFG_scale != 0.0:
-                metadata_text = metadata_text + "CFG scale: "+str(CFG_scale)+", "
-            if distilled_CFG_scale != 0.0:
-                metadata_text = metadata_text + "Distilled CFG Scale: "+str(distilled_CFG_scale)+", "
-            metadata_text = metadata_text + "Seed: "+seed_text+", "
-            if width != 0:
-                if height != 0:
-                    metadata_text = metadata_text + "Size: " + str(width) + "x" + str(height) + ", "
-
-            ckpt_path = folder_paths.get_full_path("checkpoints", modelname)
-            if not ckpt_path:
-                ckpt_path = folder_paths.get_full_path("diffusion_models", modelname)
-            if ckpt_path:
-                modelhash = get_sha256(self,ckpt_path)[:10]
-            else:
-                modelhash = ""
-            if modelhash != "":
-                metadata_text = metadata_text + "Model hash: "+modelhash+", "
-            modelname = os.path.basename(modelname)
-            modelname = os.path.splitext(modelname)[0]
-            if modelname != "":
-                metadata_text = metadata_text + "Model: "+modelname+", "
-            
-            if beta_schedule_alpha != 0.0:
-                metadata_text = metadata_text + "Beta schedule alpha: "+str(beta_schedule_alpha)+", "
-            if beta_schedule_beta != 0.0:
-                metadata_text = metadata_text + "Beta schedule beta: "+str(beta_schedule_beta)+", "
-
-            if civitai_lora_hash != "":
-                metadata_text = metadata_text + "Lora hashes: \"" + civitai_lora_hash + "\", "
-
-            metadata_text = metadata_text + "Version: ComfyUI"
+                return ("",)
 
             metadata = PngInfo()
-            metadata.add_text("parameters", metadata_text)
+            metadata.add_text("parameters", forge)
+            if prompt_json != "":
+                metadata.add_text("prompt", prompt_json)
+            if workflow_json != "":
+                metadata.add_text("workflow", workflow_json)
 
-            if save_workflow:
-                if prompt_and_lora != "":
-                    metadata.add_text("prompt", prompt_and_lora)
-                if extra_pnginfo is not None:
-                    for x in extra_pnginfo:
-                        print(f"Write {x}")
-                        metadata.add_text(x, json.dumps(extra_pnginfo[x]))
-            
-##### metadata #####
-####################
-
-            filename = f"{free_number:05d}-{seed_text}.png"
+            if seed_text != "":
+                filename = f"{free_number:05d}-{seed_text}.png"
+            else:
+                filename = f"{free_number:05d}.png"
+ 
             img.save(os.path.join(output_path, filename), pnginfo=metadata, optimize=False)
 
-        return (metadata_text,)  
+        print(f"\033[92mImage save\033[0m")
+
+        return (forge,)  
 
 
 ################################
@@ -637,8 +689,8 @@ class SimpleLoadImageWithMetadataString:
                     {"image": (sorted(files), )},
                 }
     CATEGORY = "📚 SimpleButcher"
-    RETURN_TYPES = ("IMAGE", "MASK", "STRING", "STRING")
-    RETURN_NAMES = ("image", "mask", "metadata_forge", "prompt")
+    RETURN_TYPES = ("IMAGE", "MASK", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("image", "mask", "metadata_parameters (forge)", "metadata_workflow", "metadata_prompt")
     FUNCTION = "read_image"
     DESCRIPTION = "Load Image with metadata in simple string!"
 
@@ -658,19 +710,25 @@ class SimpleLoadImageWithMetadataString:
         format = i.format
         metadata = i.info
 
-        #exif_workflow = ""
-        #if "workflow" in metadata:
-        #  exif_workflow = metadata["workflow"]
+##### metadata parameters (Forge style) #####
 
-        exif_prompt = ""
-        if "prompt" in metadata:
-          exif_prompt = metadata["prompt"]
-        
-        exif_metadata = ""
+        forge = ""
         if "parameters" in metadata:
-          exif_metadata = metadata["parameters"]
+          forge = metadata["parameters"]
 
-        return (image, mask, exif_metadata, exif_prompt)
+##### metadata prompt (Сomfy-ui style) #####
+
+        prompt_json = ""
+        if "prompt" in metadata:
+          prompt_json = metadata["prompt"]
+
+##### metadata workflow (Сomfy-ui style) #####
+
+        workflow_json = ""
+        if "workflow" in metadata:
+          workflow_json = metadata["workflow"]
+
+        return (image, mask, forge, workflow_json, prompt_json)
 
     @classmethod
     def IS_CHANGED(s, image):

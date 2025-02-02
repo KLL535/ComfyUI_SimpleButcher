@@ -1,7 +1,8 @@
 # nightly
+- update `Simple Load Image With Metadata` and `Simple Image Saver (as Forge)`
 # v1.0.3
 - fix random
-- add node Simple Load Image With Metadata
+- add node `Simple Load Image With Metadata`
 # v1.0.2
 - fastest load LoRA hash
 - add button **Update LoRA dictionary** in `Simple Lora Loader` for update **lora_name.json**
