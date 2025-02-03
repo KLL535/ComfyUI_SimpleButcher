@@ -1,4 +1,5 @@
 # nightly
+# v1.0.4
 - update `Simple Load Image With Metadata` and `Simple Image Saver (as Forge)`
 # v1.0.3
 - fix random
