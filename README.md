@@ -34,6 +34,7 @@ In Windows:
 Simple tool for loading prompts directly from a text file, enabling automation of the entire batch process. You can combine this nodes to generate fully randomized texts and LoRA, sourced from your own text and LORA templates.
 
 #### Input:
+- `name` - *STRING* - Just a name. To avoid confusing nodes if there are many of them.
 - `start` - *INT* - Start position for increment or decrement methods.
 - `load_file` - *BOOLEAN* - if True, load center of prompt from file.
 - `file_path` - *STRING* - Path to the file from which the lines for the central part of the prompt will be taken.
@@ -46,7 +47,7 @@ Simple tool for loading prompts directly from a text file, enabling automation o
 - `line_counter` - *INT* - Current line counter from file.
 - `lines` - *INT* - Total lines in file. If batch is greater than lines in file, they will be read in a loop.
 
-![a](https://github.com/user-attachments/assets/0c785b8a-85a3-4863-a04f-fc6f3869a392)
+![image](https://github.com/user-attachments/assets/69b1c311-f706-4195-b20a-faa918a19851)
 
 ## Node 2: Simple Extract Lora From Text
 If the input text includes LoRA written in `Forge` style, such as `<lora:name:1.0>` or `<lora:name:unet=1.0:te=0.75>`, this node automatically segregates the text into separate prompts and LoRA.
@@ -81,16 +82,17 @@ When the workflow is first run, a dictionary `lora_name.json` is generated to st
 ![image](https://github.com/user-attachments/assets/0cbc124e-c73d-4254-811f-1b700eee5db9)
 
 ## Node 4: Simple Image Saver (as Forge)
-Image Saver designed for saved metadata in Forge-style, allowing retrieval of LoRAs' names and hashes directly from the `Simple LoRA Loader node`. This tool automatically organizes output images into subfolders based on the date. The filenames of the saved files include a sequence number and seed. Hash values ​​for current model are calculated once and stored in *.sha256 files next to model.
+Image Saver designed for saved metadata in Forge-style, allowing retrieval of LoRAs' names and hashes directly from the `Simple LoRA Loader node`. This tool automatically organizes output images into subfolders based on the date. The filenames of the saved files include a sequence number and seed. Hash values ​​for current model are calculated once and stored in `*.sha256` files next to model.
 
 #### Input:
 - `images` - *IMAGE* - image(s) to save.
-- `prompt` - *STRING*. 
 - `output_path` - *STRING* - Path where images will be saved.
-- `SEED` - *INT*.
-- `modelname` - *STRING* - Use `Checkpoint Loader with Name (Image Saver)` node.
+
 ##### Optional metadata (as Forge).
 If not connected these lines will be missing:
+- `prompt_text` - *STRING*. 
+- `SEED` - *INT*. If the `override_parameters` input is connected, the seed will be read from there.
+- `modelname` - *STRING* - Use `Checkpoint Loader with Name (Image Saver)` node.
 - `steps` - *INT*. 
 - `sampler` - *any* -  use `Sampler Selector (Image Saver)` node.
 - `schedule` - *any* - use `Scheduler Selector (Image Saver)` node.
@@ -102,11 +104,34 @@ If not connected these lines will be missing:
 - `beta_schedule_beta` - *FLOAT*.
 - `civitai_lora` - *STRING* - Loras name from `Simple Lora Loader` node.
 - `civitai_lora_hash` - *STRING* - Loras hash from `Simple Lora Loader` node.
-- `negative` - *STRING*.
+- `negative` - *STRING* - negative prompt if needed.
+- `override_parameters` - *STRING* - replaces all above parameters, if they have already been collected. 
+- `override_workflow` - *STRING* - replaces the current workflow. `Json` text.
+- `override_prompt` - *STRING* - replaces the current prompt data. `Json` text.
+- `save_comfy_workflow` - *BOOLEAN* - if **True**, saves the current workflow to metadata.
+- `save_comfy_prompt` - *BOOLEAN* - if **True**, saves the current prompt data (not `prompt_text`) to metadata.
 #### Output:
 - `metadata_text` - *STRING* - Metadata written to file.
 
-![d](https://github.com/user-attachments/assets/e767e065-5e99-4718-bc80-e169ecc9f471)
+## Node 5: Simple Load Image With Metadata
+This node is made to upload images with all metadata, including **Forge's** metadata, so as not to lose them.
+As far as I understand, there are three metadata fields:
+- `parameters` - A convenient representation. It is easy to open the image metadata and read the prompt.
+- `workflow` - The workflow is stored here, so that later it can be loaded by dragging the file, in principle, it is convenient. But it is very difficult for a person to read this.
+- `prompt` - I do not understand what is stored here. It is very difficult for a person to read this. 
+
+#### Output:
+- `image` -  *IMAGE* - load image
+- `mask` - *MASK* - mask of image
+- `metadata_parameters (forge)` - *STRING* - metadata **Forge**.
+- `metadata_workflow` - *STRING* - workflow **Comfy-ui**. `Json` text.
+- `metadata_prompt` - *STRING* - metadata **Comfy-ui**. `Json` text.
+
+A simple way to re-save an image without losing metadata.
+If you connect a workflow, you can save the previous workflow.
+If you do not connect a workflow, the current workflow will be saved.
+
+![image](https://github.com/user-attachments/assets/dfe71a81-d7c3-4b6f-a6a5-7ec2cc8ff251)
 
 ## Info in terminal
 3 node `Simple Load Line From Text File` running:
@@ -118,6 +143,6 @@ Maybe it will be useful to someone.
 [!] Tested on Windows only. Tested on Flux only.
 
 [!] The code from following resources were used:
-https://github.com/Suzie1/ComfyUI_Guide_To_Making_Custom_Nodes
-https://github.com/alexopus/ComfyUI-Image-Saver
-https://github.com/AonekoSS/ComfyUI-SimpleCounter
+- https://github.com/Suzie1/ComfyUI_Guide_To_Making_Custom_Nodes
+- https://github.com/alexopus/ComfyUI-Image-Saver
+- https://github.com/AonekoSS/ComfyUI-SimpleCounter
