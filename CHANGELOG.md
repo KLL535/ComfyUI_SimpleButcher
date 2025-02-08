@@ -1,4 +1,5 @@
 # nightly
+- `Simple Image Saver` - now when saving images, optimization is enabled to reduce file size.
 # v1.0.4
 - update `Simple Load Image With Metadata` and `Simple Image Saver (as Forge)`
 # v1.0.3

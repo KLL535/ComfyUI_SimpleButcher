@@ -671,7 +671,7 @@ class SimpleImageSaver:
             else:
                 filename = f"{free_number:05d}.png"
  
-            img.save(os.path.join(output_path, filename), pnginfo=metadata, optimize=False)
+            img.save(os.path.join(output_path, filename), pnginfo=metadata, optimize=True)
 
         print(f"\033[92mImage save\033[0m")
 
