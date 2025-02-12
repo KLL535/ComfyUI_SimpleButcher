@@ -38,7 +38,7 @@ Simple tool for loading prompts directly from a text file, enabling automation o
 - `start` - *INT* - Start position for increment or decrement methods.
 - `load_file` - *BOOLEAN* - if True, load center of prompt from file.
 - `file_path` - *STRING* - Path to the file from which the lines for the central part of the prompt will be taken.
-- `next` - `increment` or `decrement` or `random` or `random no repetitions` - Option for enumerating lines, in case of randomness the start parameter is ignored. In the latter case, the lines will be selected randomly, but without repetitions.  
+- `next` - `increment` or `decrement` or `fixed` or `random` or `random no repetitions` - Option for enumerating lines, in case of randomness the start parameter is ignored. In the latter case, the lines will be selected randomly, but without repetitions.  
 - `prefix` - *STRING* - Add text to the beginning of the prompt (optional).
 - `postfix` - *STRING* - Add text to the ending of the prompt (optional).
 #### Output:
@@ -133,6 +133,32 @@ If you do not connect a workflow, the current workflow will be saved.
 
 ![image](https://github.com/user-attachments/assets/dfe71a81-d7c3-4b6f-a6a5-7ec2cc8ff251)
 
+## Node 6: Simple Load Images from Dir
+Same as for text, only for batch images from a directory.
+
+ #### Advantages over other solutions:
+- Supports non-repetition random mode (to go through all images without repetitions, but randomly, the batch count should be equal than the number of images).
+- Supports output of raw metadata (including Forge metadata) to avoid losing it.
+
+ #### Input:
+- `name` - *STRING* - Just a name. To avoid confusing nodes if there are many of them.
+- `input_path` - *STRING* - Path to the dir to images.
+- `start` - *INT* - Start position for increment or decrement methods.
+- `next` - `increment` or `decrement` or `fixed` or `random` or `random no repetitions` - Option for enumerating files, in case of randomness the start parameter is ignored. In the latter case, the files will be selected randomly, but without repetitions.  
+- `include_subdir` - *BOOLEAN* - Turn on to read all images and subdirectories too.
+
+#### Output:
+- `image` -  *IMAGE* - load image
+- `mask` - *MASK* - mask of image
+- `metadata_parameters (forge)` - *STRING* - metadata **Forge**.
+- `metadata_workflow` - *STRING* - workflow **Comfy-ui**. `Json` text.
+- `metadata_prompt` - *STRING* - metadata **Comfy-ui**. `Json` text.
+- `batch_counter` - *INT* - Current batch counter, if you start a new batch the counter will reset to 1.
+- `line_counter` - *INT* - Current file counter.
+- `lines` - *INT* - Total files. If batch is greater than files, they will be open in a loop.
+
+![image](https://github.com/user-attachments/assets/728bd697-1948-493d-87e9-15efd7c657eb)
+
 ## Info in terminal
 3 node `Simple Load Line From Text File` running:
 
@@ -140,7 +166,7 @@ If you do not connect a workflow, the current workflow will be saved.
 
 Maybe it will be useful to someone. 
 
-[!] Tested on Windows only. Tested on Flux only.
+[!] Tested on Windows only. Tested on Flux and SDXL.
 
 [!] The code from following resources were used:
 - https://github.com/Suzie1/ComfyUI_Guide_To_Making_Custom_Nodes
