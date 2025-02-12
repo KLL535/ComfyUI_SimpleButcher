@@ -26,7 +26,7 @@ class AnyType(str):
   def __ne__(self, __value: object) -> bool:
     return False
 
-any = AnyType("*")
+anytype = AnyType("*")
 
 def get_sha256(self, file_path: str):
     file_no_ext = os.path.splitext(file_path)[0]
@@ -79,8 +79,8 @@ class SimpleLoadLineFromTextFile:
                 "name": ("STRING", {"default": "", "multiline": False, "tooltip": "Node name"}), 
                 "start": ("INT", {"default": 0, "min": 0, "step": 1, "tooltip": "Start position for increment or decrement methods"}),
                 "load_file": ("BOOLEAN", {"default": True, "tooltip": "if True, load center of prompt from file"}),
-                "file_path": ("STRING", {"default": "", "multiline": False, "tooltip": "Path to the file from which the lines for the central part of the prompt will be taken"}),
-                "next": (["increment", "decrement", "random", "random no repetitions"], {"default":"increment", "tooltip": "Option for enumerating lines, in case of randomness the start parameter is ignored"}),      
+                "file_path": ("STRING", {"default": "", "multiline": True, "tooltip": "Path to the file from which the lines for the central part of the prompt will be taken"}),
+                "next": (["increment", "decrement", "random", "random no repetitions", "fixed"], {"default":"increment", "tooltip": "Option for enumerating lines, in case of randomness the start parameter is ignored"}),      
             },
             "optional": {
                 "prefix": ("STRING", {"multiline": True, "default": "", "tooltip": "Add text to the beginning of the prompt"}),   
@@ -100,7 +100,7 @@ class SimpleLoadLineFromTextFile:
         if count == 0:
             self.batch_counter = 0
             self.line_counter = start
-            print(f"\033[93mClear counter\033[0m")
+            print(f"\033[93mClear counter {name}\033[0m")
 
         self.batch_counter = self.batch_counter + 1
 
@@ -489,8 +489,8 @@ class SimpleImageSaver:
                     "SEED": ("INT",  {"default": None, "tooltip": "INT", "forceInput": True}),
                     "modelname": ("STRING",  {"default": '', "multiline": False, "tooltip": "STRING, use Checkpoint Loader with Name (Image Saver) node", "forceInput": True}),
                     "steps": ("INT", {"default": 0, "tooltip": "INT", "forceInput": True}),
-                    "sampler": (any, {"default": None, "tooltip": "ANY, use Sampler Selector (Image Saver) node", "forceInput": True}),
-                    "schedule": (any, {"default": None, "tooltip": "ANY, use Scheduler Selector (Image Saver) node", "forceInput": True}),
+                    "sampler": (anytype, {"default": None, "tooltip": "ANY, use Sampler Selector (Image Saver) node", "forceInput": True}),
+                    "schedule": (anytype, {"default": None, "tooltip": "ANY, use Scheduler Selector (Image Saver) node", "forceInput": True}),
                     "CFG_scale": ("FLOAT", {"default": 0.0, "tooltip": "FLOAT", "forceInput": True}),
                     "distilled_CFG_scale": ("FLOAT", {"default": 0.0, "tooltip": "FLOAT", "forceInput": True}),
                     "width": ("INT", {"default": 0, "tooltip": "INT", "forceInput": True}),
@@ -550,6 +550,7 @@ class SimpleImageSaver:
 
         output_path = output_path.strip()
         if output_path == '':
+            raise ValueError("No set output_path")
             return ("",)
 
         output_path = os.path.join(output_path, date)
@@ -570,7 +571,8 @@ class SimpleImageSaver:
             if civitai_lora != "":
                 prompt_and_lora = prompt_and_lora + ' ' + civitai_lora
 
-            forge = prompt_and_lora + '\n' 
+            if prompt_and_lora != "":
+                forge = prompt_and_lora + '\n' 
 
             if negative != "":
                 forge = forge + "Negative prompt: "+ negative + '\n'
@@ -585,7 +587,8 @@ class SimpleImageSaver:
                 forge = forge + "CFG scale: "+str(CFG_scale)+", "
             if distilled_CFG_scale != 0.0:
                 forge = forge + "Distilled CFG Scale: "+str(distilled_CFG_scale)+", "
-            forge = forge + "Seed: "+seed_text+", "
+            if seed_text != "":  
+                forge = forge + "Seed: "+seed_text+", "
             if width != 0:
                 if height != 0:
                     forge = forge + "Size: " + str(width) + "x" + str(height) + ", "
@@ -613,7 +616,8 @@ class SimpleImageSaver:
             if civitai_lora_hash != "":
                 forge = forge + "Lora hashes: \"" + civitai_lora_hash + "\", "
 
-            forge = forge + "Version: ComfyUI"
+            if forge != "":
+                forge = forge + "Version: ComfyUI"
         else:
             forge = override_parameters
             params = self.parse_parameters(forge)
@@ -656,11 +660,12 @@ class SimpleImageSaver:
 
             free_number = self.find_free_number(output_path)
             if free_number > 99999:
-                print(f"\033[91mToo many files\033[0m")
+                raise ValueError(f"Too many files in {output_path}")
                 return ("",)
 
             metadata = PngInfo()
-            metadata.add_text("parameters", forge)
+            if forge != "":
+                metadata.add_text("parameters", forge)
             if prompt_json != "":
                 metadata.add_text("prompt", prompt_json)
             if workflow_json != "":
@@ -705,25 +710,20 @@ class SimpleLoadImageWithMetadataString:
             mask = 1. - torch.from_numpy(mask)
         else:
             mask = torch.zeros((64,64), dtype=torch.float32, device="cpu")
-        width = i.width
-        height = i.height
-        format = i.format
+        #width = i.width
+        #height = i.height
+        #format = i.format
         metadata = i.info
 
 ##### metadata parameters (Forge style) #####
-
         forge = ""
         if "parameters" in metadata:
           forge = metadata["parameters"]
-
 ##### metadata prompt (Сomfy-ui style) #####
-
         prompt_json = ""
         if "prompt" in metadata:
           prompt_json = metadata["prompt"]
-
 ##### metadata workflow (Сomfy-ui style) #####
-
         workflow_json = ""
         if "workflow" in metadata:
           workflow_json = metadata["workflow"]
@@ -744,6 +744,139 @@ class SimpleLoadImageWithMetadataString:
             return "Invalid image file: {}".format(image)
         return True
 
+class SimpleLoadImagesFromDir:
+    
+    def __init__(self):
+        self.batch_counter = 0
+        self.line_counter = 0
+        self.file_list = []
+        self.random_list = []
+        self.my_random = random.Random() #isolated generator
+
+    @classmethod
+    def IS_CHANGED(s, **kwargs):
+        #always update
+        return float("NaN")
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                    "name": ("STRING", {"default": "", "multiline": False, "tooltip": "Node name"}), 
+                    "input_path": ("STRING", {"default": "", "multiline": True, "tooltip": "Path from images will be load"}),
+                    "start": ("INT", {"default": 0, "min": 0, "step": 1, "tooltip": "Start position for increment or decrement methods"}),
+                    "next": (["increment", "decrement", "random", "random no repetitions", "fixed"], {"default":"increment", "tooltip": "Option for enumerating files, in case of randomness the start parameter is ignored"}),      
+            },
+            "optional": {
+                    "include_subdir": ("BOOLEAN", {"default": False, "tooltip": "if True, find files include subdirectory"}),  
+                    "count": ("INT", {"default": 0, "min": 0, "step": 1}),
+            },
+        }
+    CATEGORY = "📚 SimpleButcher"
+    RETURN_TYPES = ("IMAGE", "MASK", "STRING", "STRING", "STRING", "INT", "INT", "INT")
+    RETURN_NAMES = ("image", "mask", "metadata_parameters (forge)", "metadata_workflow", "metadata_prompt","batch_counter","line_counter","lines")
+    FUNCTION = "read_image"
+    DESCRIPTION = "Batch load images with metadata from dir"
+
+    def read_image(self, name = "", input_path = "", start = 0, next = "increment", include_subdir = False, count = 0):    
+
+        if count == 0:
+            self.file_list = []
+            self.batch_counter = 0
+            self.line_counter = start
+            print(f"\033[93mClear counter {name}\033[0m")
+
+        self.batch_counter = self.batch_counter + 1
+        
+        if input_path == "":
+            raise ValueError("No set input_path")
+            return (None,None,"","","",0,0,0)
+
+        if len(self.file_list) == 0:
+            filetypes = [".png", ".jpg", ".jpeg"]
+            self.file_list = self.find_files(input_path, filetypes, include_subdir)
+            #print(f"\033[93mFind {len(self.file_list)} files\033[0m")
+
+        line_count = len(self.file_list)
+        if line_count == 0:
+            raise ValueError("No input files")
+            return (None,None,"","","",0,0,0)
+
+        if next == "random no repetitions":
+            if count == 0:
+                # save random numbers
+                random_seed = generate_unique_seed()
+                #print(f"\033[93m{random_seed}\033[0m")
+                self.my_random.seed(random_seed)
+                self.random_list = list(range(0, line_count))
+                self.my_random.shuffle(self.random_list)
+            rnd = self.batch_counter % len(self.random_list)
+            self.line_counter = self.random_list[rnd]
+        elif next == "random":
+            if count == 0:
+                # randomize
+                random_seed = generate_unique_seed()
+                #print(f"\033[93m{random_seed}\033[0m")
+                self.my_random.seed(random_seed)
+            rnd = self.my_random.randint(0, line_count-1)
+            self.line_counter = rnd
+
+        self.line_counter = self.line_counter % line_count
+        image_path = self.file_list[self.line_counter]
+        current_line = self.line_counter
+
+        #for line in lines:
+        #    print(f"\033[93mFind file {line}\033[0m")
+
+        console_text = f"[\033[95mBatch {name}: {self.batch_counter}\033[0m -> \033[92mImage: {str(current_line)}/{str(line_count)}\033[0m]"
+        print(f"{console_text}")
+
+        if next == "increment":
+            self.line_counter = self.line_counter+1
+        elif next == "decrement":
+            self.line_counter = self.line_counter-1
+            if self.line_counter < 0:
+                self.line_counter = line_count-1
+
+        i = Image.open(image_path)
+        image = i.convert("RGB")
+        image = np.array(image).astype(np.float32) / 255.0
+        image = torch.from_numpy(image)[None,]
+        if 'A' in i.getbands():
+            mask = np.array(i.getchannel('A')).astype(np.float32) / 255.0
+            mask = 1. - torch.from_numpy(mask)
+        else:
+            mask = torch.zeros((64,64), dtype=torch.float32, device="cpu")
+        #width = i.width
+        #height = i.height
+        #format = i.format
+        metadata = i.info
+
+##### metadata parameters (Forge style) #####
+        forge = ""
+        if "parameters" in metadata:
+          forge = metadata["parameters"]
+##### metadata prompt (Сomfy-ui style) #####
+        prompt_json = ""
+        if "prompt" in metadata:
+          prompt_json = metadata["prompt"]
+##### metadata workflow (Сomfy-ui style) #####
+        workflow_json = ""
+        if "workflow" in metadata:
+          workflow_json = metadata["workflow"]
+        return (image, mask, forge, workflow_json, prompt_json, self.batch_counter, current_line, line_count)
+
+    def find_files(self, directory, filetypes, subdir=False):
+        result = []
+        for root, dirs, files in os.walk(directory):
+            if not subdir:
+                del dirs[:]
+            for file in files:
+                if any(file.endswith(ext) for ext in filetypes):
+                    result.append(os.path.join(root, file))
+        return(result)
+
+
 ################################
 
 NODE_CLASS_MAPPINGS = { 
@@ -752,6 +885,7 @@ NODE_CLASS_MAPPINGS = {
     "Simple Lora Loader": SimpleLoraLoader,
     "Simple Image Saver (as Forge)": SimpleImageSaver,
     "Simple Load Image With Metadata": SimpleLoadImageWithMetadataString,
+    "Simple Load Images from Dir": SimpleLoadImagesFromDir,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -760,5 +894,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "Simple Lora Loader": "Simple Lora Loader 📚",
     "Simple Image Saver (as Forge)": "Simple Image Saver (as Forge) 📚",
     "Simple Load Image With Metadata": "Simple Load Image With Metadata 📚",
+    "Simple Load Images From Dir": "Simple Load Images From Dir 📚",
 }
 
