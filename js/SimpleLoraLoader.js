@@ -7,11 +7,11 @@ app.registerExtension({
             const originalOnNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = function() {
                 if (originalOnNodeCreated) { originalOnNodeCreated.call(this); }
-                let counter = 1;
+                let counter = false;
                 const count = this.widgets.find((w) => w.name === "count");
                 count.type = "converted-widget"; // hidden
-                count.serializeValue = () => { return counter++; }    
-                this.addWidget("button","Update LoRA dictionary",null,() => { counter = 0; },{ width: 150 });
+                count.serializeValue = () => { if (counter == true) { counter = false; return 0; } else return 1; }    
+                this.addWidget("button","Update LoRA dictionary",null,() => { counter = true; },{ width: 150 });
             };
         }
     },

@@ -1,4 +1,5 @@
 # nightly
+- Fix "always run" mode for `Simple Lora Loader`
 # v1.0.5
 - Add node `Simple Load Images From Dir` to batch images
 - Add `fixed` variant to `Simple Load Line From Text File`
