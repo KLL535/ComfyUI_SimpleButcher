@@ -159,6 +159,21 @@ Same as for text, only for batch images from a directory.
 
 ![image](https://github.com/user-attachments/assets/728bd697-1948-493d-87e9-15efd7c657eb)
 
+## Node 7: Simple Auto Bypass
+Sometimes when I disable a whole group, the information coming into it passing through many complex nodes is lost (becomes None), and I need this information to pass through the disabled group without changes. Here is such a simple solution. 
+This does not require any additional path management. For some reason I didn't find similar simple solutions in other packages.
+
+#### Input:
+- `input1` - *ANY* - Main entrance. Connect to `output` if `input2` = **None**
+- `input2` - *ANY* - Disabled input. if not **None** connect to `output`
+  
+#### Example:
+LLM block enabled. Prompt goes through LMM group.
+![2](https://github.com/user-attachments/assets/83ccc0a7-ef9e-4b08-a801-845b1075b41b)
+
+LLM block disabled. Prompt continues without changes. Without `Simple Auto Bypass` prompt would have disappeared.
+![3](https://github.com/user-attachments/assets/d38444d4-45ef-49d5-b671-1208c8d9d9dc)
+
 ## Info in terminal
 3 node `Simple Load Line From Text File` running:
 
