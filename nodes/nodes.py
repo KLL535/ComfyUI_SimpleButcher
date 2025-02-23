@@ -902,6 +902,33 @@ class AutoBypassNode:
 
 ################################
 
+class RemoveThinkNode:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "text": ("STRING", {"multiline": True, "forceInput": True}),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("cleaned_text",)
+    FUNCTION = "process"
+    CATEGORY = "📚 SimpleButcher"
+    DESCRIPTION = "Remove <think>...</think> section in text"
+
+    def process(self, text):
+
+        # remove <think>...</think>
+        cleaned = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
+        
+        cleaned = '\n'.join([line for line in cleaned.split('\n') if line.strip()])
+        
+        return (cleaned,)
+
+
+################################
+
 NODE_CLASS_MAPPINGS = { 
     "Simple Load Line From Text File": SimpleLoadLineFromTextFile,
     "Simple Extract Lora From Text": SimpleExtractLoraFromText,
@@ -910,6 +937,7 @@ NODE_CLASS_MAPPINGS = {
     "Simple Load Image With Metadata": SimpleLoadImageWithMetadataString,
     "Simple Load Images from Dir": SimpleLoadImagesFromDir,
     "Simple Auto Bypass": AutoBypassNode,
+    "Simple Remove Think": RemoveThinkNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -920,5 +948,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "Simple Load Image With Metadata": "Simple Load Image With Metadata 📚",
     "Simple Load Images From Dir": "Simple Load Images From Dir 📚",
     "Simple Auto Bypass": "Simple Auto Bypass 📚",
+    "Simple Remove Think": "Simple Remove Think 📚",
 }
 
