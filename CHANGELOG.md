@@ -1,4 +1,6 @@
 # nightly
+# v1.0.6
+- Add `Simple Auto Bypass` node
 - Fix "always run" mode for `Simple Lora Loader`
 # v1.0.5
 - Add node `Simple Load Images From Dir` to batch images

@@ -879,6 +879,29 @@ class SimpleLoadImagesFromDir:
 
 ################################
 
+class AutoBypassNode:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {},
+            "optional": {
+                "input1": (anytype, { "default": None, "tooltip": "Bypassed input" }),  
+                "input2": (anytype, { "default": None, "tooltip": "Input from disable group" }),  
+            },
+        }
+
+    RETURN_TYPES = (anytype,)
+    RETURN_NAMES = ("output",)
+    FUNCTION = "switch"
+    CATEGORY = "📚 SimpleButcher"
+    DESCRIPTION = "input1 bypassed to output if input2 is None (connected to disable group)"
+
+    def switch(self, input1=None, input2=None):
+        output = input2 if input2 is not None else input1
+        return (output,)
+
+################################
+
 NODE_CLASS_MAPPINGS = { 
     "Simple Load Line From Text File": SimpleLoadLineFromTextFile,
     "Simple Extract Lora From Text": SimpleExtractLoraFromText,
@@ -886,6 +909,7 @@ NODE_CLASS_MAPPINGS = {
     "Simple Image Saver (as Forge)": SimpleImageSaver,
     "Simple Load Image With Metadata": SimpleLoadImageWithMetadataString,
     "Simple Load Images from Dir": SimpleLoadImagesFromDir,
+    "Simple Auto Bypass": AutoBypassNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -895,5 +919,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "Simple Image Saver (as Forge)": "Simple Image Saver (as Forge) 📚",
     "Simple Load Image With Metadata": "Simple Load Image With Metadata 📚",
     "Simple Load Images From Dir": "Simple Load Images From Dir 📚",
+    "Simple Auto Bypass": "Simple Auto Bypass 📚",
 }
 
