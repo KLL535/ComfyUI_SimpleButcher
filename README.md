@@ -161,7 +161,7 @@ Same as for text, only for batch images from a directory.
 
 ## Node 7: Simple Auto Bypass
 Sometimes when I disable a whole group, the information coming into it passing through many complex nodes is lost (becomes None), and I need this information to pass through the disabled group without changes. Here is such a simple solution. 
-This does not require any additional path management. For some reason I didn't find similar simple solutions in other packages.
+**I later found an alternative:** `Any Switch (rgthree)`. But there are 6 input groups, and I have two - that's the only difference.
 
 #### Input:
 - `input1` - *ANY* - Main entrance. Connect to `output` if `input2` = **None**
@@ -173,6 +173,9 @@ LLM block enabled. Prompt goes through LMM group.
 
 LLM block disabled. Prompt continues without changes. Without `Simple Auto Bypass` prompt would have disappeared.
 ![3](https://github.com/user-attachments/assets/d38444d4-45ef-49d5-b671-1208c8d9d9dc)
+
+## Node 8: Simple Remove Think
+Just a node that removes the `<think>...</think>` section from the text after the thinking LLMs
 
 ## Info in terminal
 3 node `Simple Load Line From Text File` running:
