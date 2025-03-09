@@ -1,4 +1,5 @@
 # nightly
+- Fix `SimpleLoadImageWithMetadata`
 - Add `Simple Remove Think` node
 # v1.0.6
 - Add `Simple Auto Bypass` node
