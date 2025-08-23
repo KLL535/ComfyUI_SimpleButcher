@@ -112,7 +112,7 @@ class SimpleLoadLineFromTextFile:
             file_path = os.path.expandvars(file_path)
             if not os.path.isfile(file_path):
                 raise FileNotFoundError(f"The file at path '{file_path}' does not exist.")
-            with open(file_path, 'r', encoding='ISO-8859-1') as file: #utf-8
+            with open(file_path, 'r', encoding='utf-8') as file: #utf-8
                 lines = file.readlines()
             
             for line in lines:
@@ -932,4 +932,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "Simple Auto Bypass": "Simple Auto Bypass 📚",
     "Simple Remove Think": "Simple Remove Think 📚",
 }
+
 
